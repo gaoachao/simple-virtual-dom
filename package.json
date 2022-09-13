@@ -2,10 +2,13 @@
   "name": "vdom",
   "version": "1.0.0",
   "main": "index.js",
+  "repository": "https://github.com/gaoachao/simple-virtual-dom.git",
+  "author": "gaoachao <1227448581@qq.com>",
   "license": "MIT",
+  "dependencies": {},
   "devDependencies": {
     "@babel/cli": "^7.18.10",
     "@babel/core": "^7.19.0",
-    "@babel/preset-env": "^7.19.0"
+    "@babel/plugin-transform-react-jsx": "^7.19.0"
   }
 }
