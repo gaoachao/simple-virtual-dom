@@ -36,9 +36,9 @@ const setProp =($target, name, value)=> {
 					$target.setAttribute(name, value);
 			}
 			//如果value是false的话真实dom没有必要加上这个属性
-			return $target[name] = value;
+			$target[name] = value;
 	} else {
-			return $target.setAttribute(name, value);
+			$target.setAttribute(name, value);
 	}
 }
 

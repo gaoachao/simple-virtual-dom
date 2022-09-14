@@ -1,5 +1,6 @@
 import createVdom  from "./createVdom.js";
 import  toRealDom  from "./convertVdom.js";
+import updateDom from "./updateDom.js";
 
 // 使用JSX的语法写的vdom
 // const vdomJSX = (
@@ -39,9 +40,20 @@ const vdom = {
 // 			children,
 // 	};
 // }
-const createdNode = createVdom("div",null,
-	createVdom("span",{class:"item"},"item"),
-	createVdom("input",{disabled:true})
+const oldVNode = createVdom("div",null,
+	createVdom("span",{class:"item"},createVdom("span",{class:"item7"},"item7"),"item11"),
+	createVdom("input",{disabled:true}),
 )
+
 const root = document.querySelector('.root');
-root.appendChild(toRealDom(createdNode));
+root.appendChild(toRealDom(oldVNode));
+
+
+const newVNode = createVdom("div",{class:"root2"},
+	createVdom("span",{id:"item2"},"item8","item9",createVdom("span",{class:"item10"},"item10")),
+	createVdom("input",{disabled:false}),
+	createVdom("span",{class:"item3"},"item3"),
+)
+//这里只传递了一次也就意味着VDOM只允许有一个根节点<div></div>
+//这里遇到一个很坑的地方，如果在root中<div class="root"></div>中间留有空格则会算有一个#text节点在VDOM的<div></div>之前
+updateDom(root,oldVNode,newVNode,0);
