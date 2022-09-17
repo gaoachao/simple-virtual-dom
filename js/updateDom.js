@@ -10,7 +10,6 @@ import toRealDom from "./convertVdom.js";
 const updateDom = ($parent, oldVNode, newVNode, index) => {
   // 当前索引的真实DOM为传入的父节点的
   const $currentDom = $parent.childNodes[index];
-	console.log($parent.childNodes);
   // 先考虑新旧VDOM的类型变化
   // 没有旧的节点，添加新的节点
   if (!oldVNode) {

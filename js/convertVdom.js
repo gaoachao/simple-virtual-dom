@@ -30,7 +30,7 @@ const setProp =($target, name, value)=> {
 	} else if (name === 'className') { 
 			return $target.setAttribute('class', value);
 	} else if (isEventProp(name)) {
-			return $target.addEventListener(extractEventName(name), value);
+		return $target.addEventListener(extractEventName(name), value);
 	} else if (typeof value === 'boolean') {
 			if (value) {
 					$target.setAttribute(name, value);
