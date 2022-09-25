@@ -66,6 +66,7 @@ const toRealDom = (vNode) =>{
 					$dom.appendChild(realChildDom);
 			});
 	}
+	vNode.$el = $dom;
 
 	return $dom;
 }

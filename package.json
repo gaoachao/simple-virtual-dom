@@ -5,7 +5,9 @@
   "repository": "https://github.com/gaoachao/simple-virtual-dom.git",
   "author": "gaoachao <1227448581@qq.com>",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "nanoid": "^4.0.0"
+  },
   "devDependencies": {
     "@babel/cli": "^7.18.10",
     "@babel/core": "^7.19.0",

@@ -7,9 +7,9 @@ import toRealDom from "./convertVdom.js";
  * @param {number} index 表示当前更新第几子节点，默认为0
  * @return
  */
-const updateDom = ($parent, oldVNode, newVNode, index) => {
-  // 当前索引的真实DOM为传入的父节点的
-  const $currentDom = $parent.childNodes[index];
+const updateDom = ($parent, oldVNode, newVNode) => {
+  const $currentDom = oldVNode.$el;
+
   // 先考虑新旧VDOM的类型变化
   // 没有旧的节点，添加新的节点
   if (!oldVNode) {
@@ -22,8 +22,12 @@ const updateDom = ($parent, oldVNode, newVNode, index) => {
   }
 
   // 都是文本节点，都没有发生变化
-  if (typeof oldVNode === "string" && typeof newVNode === "string" && oldVNode === newVNode) {
-      return;
+  if (
+    typeof oldVNode === "string" &&
+    typeof newVNode === "string" &&
+    oldVNode === newVNode
+  ) {
+    return;
   }
 
   if (isNodeChanged(oldVNode, newVNode)) {
@@ -61,12 +65,80 @@ const updateDom = ($parent, oldVNode, newVNode, index) => {
     (oldVNode.children && oldVNode.children.length) ||
     (newVNode.children && newVNode.children.length)
   ) {
-    for (
-      let i = 0;
-      i < oldVNode.children.length || i < newVNode.children.length;
-      i++
-    ) {
-      updateDom($currentDom, oldVNode.children[i], newVNode.children[i], i);
+    // 没有实现顺序diff
+    // for (
+    //   let i = 0;
+    //   i < oldVNode.children.length || i < newVNode.children.length;
+    //   i++
+    // ) {
+    //   updateDom($currentDom, oldVNode.children[i], newVNode.children[i], i);
+    // }
+
+    let oldStartIdx = 0;
+    let oldEndIdx = oldVNode.children.length - 1;
+    let oldStartVnode = oldVNode.children[oldStartIdx];
+    let oldEndVnode = oldVNode.children[oldEndIdx];
+
+    let newStartIdx = 0;
+    let newEndIdx = newVNode.children.length - 1;
+    let newStartVnode = newVNode.children[newStartIdx];
+    let newEndVnode = newVNode.children[newEndIdx];
+
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldVNode.children[++oldStartIdx];
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldVNode.children[--oldEndIdx];
+      } else if (!newStartVnode) {
+        newStartVnode = newVNode.children[++newStartIdx];
+      } else if (!newEndVnode) {
+        newEndVnode = newVNode.children[--newEndIdx];
+      } else if (isSameNode(oldStartVnode, newStartVnode)) {
+        // 如果两个头节点是同一个节点，则更新其子节点，继续向后遍历
+        updateDom($currentDom, oldStartVnode, newStartVnode);
+        oldStartVnode = oldVNode.children[++oldStartIdx];
+        newStartVnode = newVNode.children[++newStartIdx];
+      } else if (isSameNode(oldEndVnode, newStartVnode)) {
+        // 如果两个尾节点是同一个节点，则更新其子节点，继续向前遍历
+        updateDom($currentDom, oldEndVnode, newEndVnode);
+        oldEndVnode = oldVNode.children[--oldEndIdx];
+        newEndVnode = newVNode.children[--newEndIdx];
+      } else if (isSameNode(oldStartVnode, newEndVnode)) {
+        // 如果旧的头节点和新的尾节点相同，可以通过移动节点来复用DOM
+        // 先继续更新子节点，然后把旧的头结点（即新的尾节点）加入到最后面
+        updateDom(oldVNode.$el, oldStartVnode, newEndVnode);
+        oldVNode.$el.insertBefore(
+          oldStartVnode.$el,
+          oldEndVnode.$el.nextSibling
+        );
+        oldStartVnode = oldVNode.children[++oldStartIdx];
+        newEndVnode = newVNode.children[--newEndIdx];
+      } else if (isSameNode(oldEndVnode, newStartVnode)) {
+        // 原理同上
+        updateDom(oldVNode.$el, oldEndVnode, newStartVnode);
+        oldVNode.$el.insertBefore(oldEndVnode.$el, oldStartVnode.$el);
+        oldEndVnode = oldVNode.children[--oldEndIdx];
+        newStartVnode = newVNode.children[++newStartIdx];
+      }
+      if (oldStartIdx > oldEndIdx) {
+        for (let i = newStartIdx; i <= newEndIdx; i++) {
+          if (newVNode.children[i]) {
+            oldVNode.$el.insertBefore(
+              toRealDom(newVNode.children[i]),
+              newVNode.children[newEndIdx + 1]
+                ? newVNode.children[newEndIdx + 1].$el
+                : null
+            );
+          }
+        }
+      } else if (newStartIdx > newEndIdx) {
+        // 当新节点头索引大于新节点尾索引，表示新节点组已经遍历完了，直接删除旧的未遍历到的节点，这些节点不再需要
+        for (let i = oldStartIdx; i <= oldEndIdx; i++) {
+          if (oldVNode.children[i]) {
+            oldVNode.$el.removeChild(oldVNode.children[i].$el);
+          }
+        }
+      }
     }
   }
 };
@@ -174,3 +246,8 @@ const setProp = ($target, name, value) => {
 };
 
 export default updateDom;
+
+//对比key
+const isSameNode = (oldNode, newNode) => {
+  return oldNode.props["key"] === newNode.props["key"];
+};

@@ -51,12 +51,26 @@ const root = document.querySelector('.root');
 root.appendChild(toRealDom(oldVNode));
 
 
-const newVNode = createVdom("div",{class:"root2"},
-	createVdom("span",{id:"item2"},"item8","item9",createVdom("span",{class:"item10"},"item10")),
-	createVdom("input",{disabled:false}),
-	createVdom("span",{class:"item3"},"item3"),
-	createVdom("button",{onClick:function(){console.log(222)}},"click"),
+// const newVNode = createVdom("div",{class:"root2"},
+// 	createVdom("span",{id:"item2"},"item8","item9",createVdom("span",{class:"item10"},"item10")),
+// 	createVdom("input",{disabled:false}),
+// 	createVdom("span",{class:"item3"},"item3"),
+// 	createVdom("button",{onClick:function(){console.log(222)}},"click"),
+// )
+// //这里只传递了一次也就意味着VDOM只允许有一个根节点<div></div>
+// //这里遇到一个很坑的地方，如果在root中<div class="root"></div>中间留有空格则会算有一个#text节点在VDOM的<div></div>之前
+// updateDom(root,oldVNode,newVNode,0);
+
+const oldOrder = createVdom("div",null,
+	createVdom('li',{key:"1"}),
+	createVdom('li',{key:"2"}),
+	createVdom('li',{key:"3"}),
+	createVdom('li',{key:"4"}),
 )
-//这里只传递了一次也就意味着VDOM只允许有一个根节点<div></div>
-//这里遇到一个很坑的地方，如果在root中<div class="root"></div>中间留有空格则会算有一个#text节点在VDOM的<div></div>之前
-updateDom(root,oldVNode,newVNode,0);
+
+const newOrder = createVdom("div",null,
+	createVdom('li',{key:"1"}),
+	createVdom('li',{key:"2"}),
+	createVdom('li',{key:"4"}),
+	createVdom('li',{key:"3"}),
+)
