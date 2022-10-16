@@ -61,10 +61,10 @@ export default createVdom;
 // 2.将虚拟dom转化成真实dom
 
 /*关于 isCustomProp 函数:
-		还有一类属性是我们的自定义属性，例如主流框架中的组件间的状态传递，
-		即通过props来进行传递的，我们并不希望这一类属性显示在 DOM 中，
-		因此需要编写一个函数isCustomProp来检查这个属性是否是自定义属性，
-		因为本文只是为了实现 Virtual DOM 的核心思想，为了方便，在本文中，这个函数直接返回false。
+  还有一类属性是我们的自定义属性，例如主流框架中的组件间的状态传递，
+  即通过props来进行传递的，我们并不希望这一类属性显示在 DOM 中，
+  因此需要编写一个函数isCustomProp来检查这个属性是否是自定义属性，
+  因为本文只是为了实现 Virtual DOM 的核心思想，为了方便，在本文中，这个函数直接返回false。
 */
 
 const isCustomProp = (name) => {
