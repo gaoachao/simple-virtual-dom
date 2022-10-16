@@ -1,13 +1,7 @@
 import toRealDom from "./convertVdom.js";
 
-/**
- * @param {}$parent 表示挂载的父节点
- * @param	{}oldVnode 表示旧的节点
- * @param {}newNode 表示新的节点
- * @param {number} index 表示当前更新第几子节点，默认为0
- * @return
- */
 const updateDom = ($parent, oldVNode, newVNode) => {
+  // 当前的真实dom
   const $currentDom = oldVNode.$el;
 
   // 先考虑新旧VDOM的类型变化
@@ -23,16 +17,13 @@ const updateDom = ($parent, oldVNode, newVNode) => {
 
   // 都是文本节点，都没有发生变化
   if (
-    typeof oldVNode === "string" &&
-    typeof newVNode === "string" &&
-    oldVNode === newVNode
+    oldVNode.type === "textNode" &&
+    newVNode.type === "textNode" &&
+    oldVNode.text === newVNode.text
   ) {
     return;
   }
 
-  if (isNodeChanged(oldVNode, newVNode)) {
-    return $parent.replaceChild(toRealDom(newVNode), $currentDom);
-  }
 
   const oldProps = oldVNode.props || {};
   const newProps = newVNode.props || {};
@@ -48,6 +39,7 @@ const updateDom = ($parent, oldVNode, newVNode) => {
         removeProp($currentDom, propKey, oldProps[propKey]);
       });
     } else {
+      // 拿到所有的props，以此遍历，增加/删除/修改对应属性
       const allPropsKeys = new Set([...oldPropsKeys, ...newPropsKeys]);
       allPropsKeys.forEach((propKey) => {
         if (!newProps[propKey]) {
@@ -84,6 +76,10 @@ const updateDom = ($parent, oldVNode, newVNode) => {
     let newStartVnode = newVNode.children[newStartIdx];
     let newEndVnode = newVNode.children[newEndIdx];
 
+    let oldKeyToIdx;
+    let idxInOld;
+    let elmToMove;
+
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (!oldStartVnode) {
         oldStartVnode = oldVNode.children[++oldStartIdx];
@@ -119,11 +115,43 @@ const updateDom = ($parent, oldVNode, newVNode) => {
         oldVNode.$el.insertBefore(oldEndVnode.$el, oldStartVnode.$el);
         oldEndVnode = oldVNode.children[--oldEndIdx];
         newStartVnode = newVNode.children[++newStartIdx];
+      } else {
+
+        // 如果不存在旧节点的key表，则创建。(头头、尾尾、头尾、尾头都比较完后再比较剩余的节点)
+        if (oldKeyToIdx === undefined) {
+          oldKeyToIdx = createKeyToOldIdx(
+            oldVNode.children,
+            oldStartIdx,
+            oldEndIdx
+          );
+        }
+
+        // 找到新节点在旧节点组中对应节点的位置
+        idxInOld = oldKeyToIdx[newStartVnode.props["key"]];
+        // 该节点是一个新的节点，则在旧节点前插入该节点
+        if (idxInOld === undefined) {
+          // 这里创建一个新节点，表示新增加的
+          $currentDom.insertBefore(
+            toRealDom(newStartVnode),
+            oldStartVnode.$el
+          );
+          newStartVnode = newVNode.children[++newStartIdx];
+        } else {
+          // 该节点是一个旧节点，可以复用旧的DOM，则移动该节点
+          elmToMove = oldVNode.children[idxInOld];
+          updateDom($currentDom, elmToMove, newStartVnode);
+          // 然后将旧节点组中对应节点设置为undefined,代表已经遍历过了，不在遍历，否则可能存在重复插入的问题
+          oldVNode.children[idxInOld] = undefined;
+          $currentDom.insertBefore(elmToMove.$el, oldStartVnode.$el);
+          // 自增newStartIdx，继续遍历新节点
+          newStartVnode = newVNode.children[++newStartIdx];
+        }
       }
+
       if (oldStartIdx > oldEndIdx) {
         for (let i = newStartIdx; i <= newEndIdx; i++) {
           if (newVNode.children[i]) {
-            oldVNode.$el.insertBefore(
+            $currentDom.insertBefore(
               toRealDom(newVNode.children[i]),
               newVNode.children[newEndIdx + 1]
                 ? newVNode.children[newEndIdx + 1].$el
@@ -135,7 +163,7 @@ const updateDom = ($parent, oldVNode, newVNode) => {
         // 当新节点头索引大于新节点尾索引，表示新节点组已经遍历完了，直接删除旧的未遍历到的节点，这些节点不再需要
         for (let i = oldStartIdx; i <= oldEndIdx; i++) {
           if (oldVNode.children[i]) {
-            oldVNode.$el.removeChild(oldVNode.children[i].$el);
+            $currentDom.removeChild(oldVNode.children[i].$el);
           }
         }
       }
@@ -143,33 +171,23 @@ const updateDom = ($parent, oldVNode, newVNode) => {
   }
 };
 
-/**
- * @param	{}oldVnode 表示旧的节点
- * @param {}newNode 表示新的节点
- * @return {bealean} 当前节点是否发生修改
- */
-const isNodeChanged = (oldVNode, newVNode) => {
-  //一个是textNode(string)，一个是element(object)
-  if (typeof oldVNode !== typeof newVNode) {
-    return true;
-  }
+// const isNodeChanged = (oldVNode, newVNode) => {
+//   //一个是textNode(string)，一个是element(object)
+//   if (typeof oldVNode !== typeof newVNode) {
+//     return true;
+//   }
 
-  //都是textNode(string) 则需比较文本是否发生改变
-  if (typeof oldVNode === "string" && typeof newVNode === "string") {
-    return oldVNode !== newVNode;
-  }
+//   //都是textNode(string) 则需比较文本是否发生改变
+//   if (oldVNode.type === "textNode" && newVNode.type === "textNode") {
+//     return oldVNode.text !== newVNode.text;
+//   }
 
-  //都是element节点，比较节点类型是否发生改变
-  if (typeof oldVNode === "object" && typeof newVNode === "object") {
-    return oldVNode.type !== newVNode.type;
-  }
-};
+//   //都是element节点，比较节点类型是否发生改变
+//   if (typeof oldVNode === "object" && typeof newVNode === "object") {
+//     return oldVNode.type !== newVNode.type;
+//   }
+// };
 
-/**
- * @param	{}oldProps 表示旧的props
- * @param {}newProps 表示新的props
- * @return {bealean} 当前props是否发生修改
- */
 const isPropsChanged = (oldProps, newProps) => {
   // 类型不一致，props肯定发生变化
   if (typeof oldProps !== typeof newProps) {
@@ -211,6 +229,7 @@ const isEventProp = (name) => {
 const extractEventName = (name) => {
   return name.slice(2).toLowerCase();
 };
+
 const removeProp = ($target, name, value) => {
   if (isCustomProp(name)) {
     return;
@@ -245,9 +264,29 @@ const setProp = ($target, name, value) => {
   }
 };
 
-export default updateDom;
 
-//对比key
+
+// 对比key,key一样则说明是同一个节点
 const isSameNode = (oldNode, newNode) => {
   return oldNode.props["key"] === newNode.props["key"];
 };
+
+const createKeyToOldIdx = (children, beginIdx, endIdx) => {
+  let i;
+  let map = {};
+  let key;
+  let child;
+  for (i = beginIdx; i <= endIdx; ++i) {
+    child = children[i];
+    if (child != null) {
+      key = child.props["key"];
+      if (key !== undefined) {
+        map[key] = i;
+      }
+    }
+  }
+  return map;
+};
+
+
+export default updateDom;
